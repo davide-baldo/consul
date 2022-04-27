@@ -223,6 +223,11 @@
 
                   }
                 },
+                "upgradeConfigs": [
+                    {
+                        "upgradeType": "websocket"
+                    }
+                ],
                 "stripAnyHostPort": true
               }
             }

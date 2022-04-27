@@ -846,6 +846,7 @@ func (s *ResourceGenerator) makeInboundListener(cfgSnap *proxycfg.ConfigSnapshot
 
 	filterOpts := listenerFilterOpts{
 		protocol:         cfg.Protocol,
+		websocket:        cfg.Websocket,
 		filterName:       name,
 		routeName:        name,
 		cluster:          LocalAppClusterName,
@@ -1368,6 +1369,7 @@ func (s *ResourceGenerator) getAndModifyUpstreamConfigForListener(
 type listenerFilterOpts struct {
 	useRDS           bool
 	protocol         string
+	websocket        bool
 	filterName       string
 	routeName        string
 	cluster          string
@@ -1429,6 +1431,18 @@ func makeHTTPFilter(opts listenerFilterOpts) (*envoy_listener_v3.Filter, error) 
 		return nil, err
 	}
 
+	var UpgradeConfigs []*envoy_http_v3.HttpConnectionManager_UpgradeConfig
+
+	if opts.protocol == "http" && opts.websocket  {
+		UpgradeConfigs = []*envoy_http_v3.HttpConnectionManager_UpgradeConfig{
+			{
+				UpgradeType: "websocket",
+			},
+		}
+	} else {
+		UpgradeConfigs = []*envoy_http_v3.HttpConnectionManager_UpgradeConfig{}
+	}
+
 	cfg := &envoy_http_v3.HttpConnectionManager{
 		StatPrefix: makeStatPrefix(opts.statPrefix, opts.filterName),
 		CodecType:  envoy_http_v3.HttpConnectionManager_AUTO,
@@ -1441,6 +1455,7 @@ func makeHTTPFilter(opts listenerFilterOpts) (*envoy_listener_v3.Filter, error) 
 			// sampled.
 			RandomSampling: &envoy_type_v3.Percent{Value: 0.0},
 		},
+		UpgradeConfigs: UpgradeConfigs,
 	}
 
 	if opts.useRDS {

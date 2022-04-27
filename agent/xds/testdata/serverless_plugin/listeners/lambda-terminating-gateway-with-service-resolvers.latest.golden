@@ -169,6 +169,11 @@
 
                   }
                 },
+                "upgradeConfigs": [
+                    {
+                        "upgradeType": "websocket"
+                    }
+                ],
                 "stripAnyHostPort": true
               }
             }
@@ -251,6 +256,11 @@
 
                   }
                 },
+                "upgradeConfigs": [
+                    {
+                        "upgradeType": "websocket"
+                    }
+                ],
                 "stripAnyHostPort": true
               }
             }
@@ -387,6 +397,11 @@
 
                   }
                 },
+                "upgradeConfigs": [
+                    {
+                        "upgradeType": "websocket"
+                    }
+                ],
                 "stripAnyHostPort": true
               }
             }
