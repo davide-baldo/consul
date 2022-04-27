@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/hashicorp/consul/agent/structs"
 	"github.com/mitchellh/copystructure"
+
+	"github.com/hashicorp/consul/agent/structs"
 )
 
 // TODO(ingress): Can we think of a better for this bag of data?
@@ -336,8 +337,9 @@ func (c *configSnapshotIngressGateway) IsEmpty() bool {
 }
 
 type IngressListenerKey struct {
-	Protocol string
-	Port     int
+	Protocol  string
+	Websocket bool
+	Port      int
 }
 
 func (k *IngressListenerKey) RouteName() string {

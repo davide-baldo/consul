@@ -1729,7 +1729,7 @@ func testConfigSnapshotIngressGateway(
 				t, variation, leaf, additionalEntries...,
 			),
 			Upstreams: map[IngressListenerKey]structs.Upstreams{
-				{protocol, 9191}: {
+				{protocol, false, 9191}: {
 					{
 						// We rely on this one having default type in a few tests...
 						DestinationName:  "db",

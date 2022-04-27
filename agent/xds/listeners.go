@@ -130,6 +130,7 @@ func (s *ResourceGenerator) listenersFromSnapshotConnectProxy(cfgSnap *proxycfg.
 				clusterName: clusterName,
 				filterName:  filterName,
 				protocol:    cfg.Protocol,
+				websocket:   cfg.Websocket,
 				useRDS:      useRDS,
 			})
 			if err != nil {
@@ -155,6 +156,7 @@ func (s *ResourceGenerator) listenersFromSnapshotConnectProxy(cfgSnap *proxycfg.
 			clusterName: clusterName,
 			filterName:  filterName,
 			protocol:    cfg.Protocol,
+			websocket:   cfg.Websocket,
 			useRDS:      useRDS,
 		})
 		if err != nil {
@@ -279,6 +281,7 @@ func (s *ResourceGenerator) listenersFromSnapshotConnectProxy(cfgSnap *proxycfg.
 			filterName:  id,
 			routeName:   id,
 			protocol:    cfg.Protocol,
+			websocket:   cfg.Websocket,
 		})
 		if err != nil {
 			return nil, err
@@ -565,6 +568,7 @@ func (s *ResourceGenerator) makeIngressGatewayListeners(address string, cfgSnap 
 				clusterName: clusterName,
 				filterName:  filterName,
 				protocol:    cfg.Protocol,
+				websocket:   cfg.Websocket,
 				tlsContext:  tlsContext,
 			})
 			if err != nil {
@@ -580,6 +584,7 @@ func (s *ResourceGenerator) makeIngressGatewayListeners(address string, cfgSnap 
 			opts := listenerFilterOpts{
 				useRDS:          true,
 				protocol:        listenerKey.Protocol,
+				websocket:       listenerKey.Websocket,
 				filterName:      listenerKey.RouteName(),
 				routeName:       listenerKey.RouteName(),
 				cluster:         "",
@@ -909,6 +914,7 @@ func (s *ResourceGenerator) makeInboundListener(cfgSnap *proxycfg.ConfigSnapshot
 
 	filterOpts := listenerFilterOpts{
 		protocol:         cfg.Protocol,
+		websocket:        cfg.Websocket,
 		filterName:       name,
 		routeName:        name,
 		cluster:          LocalAppClusterName,
@@ -990,6 +996,7 @@ func (s *ResourceGenerator) makeExposedCheckListener(cfgSnap *proxycfg.ConfigSna
 	opts := listenerFilterOpts{
 		useRDS:          false,
 		protocol:        path.Protocol,
+		websocket:       path.Websocket,
 		filterName:      filterName,
 		routeName:       filterName,
 		cluster:         cluster,
@@ -1078,13 +1085,7 @@ func (s *ResourceGenerator) makeTerminatingGatewayListener(
 			)
 		}
 
-		clusterChain, err := s.makeFilterChainTerminatingGateway(
-			cfgSnap,
-			clusterName,
-			svc,
-			intentions,
-			cfg.Protocol,
-		)
+		clusterChain, err := s.makeFilterChainTerminatingGateway(cfgSnap, clusterName, svc, intentions, cfg.Protocol, false)
 		if err != nil {
 			return nil, fmt.Errorf("failed to make filter chain for cluster %q: %v", clusterName, err)
 		}
@@ -1102,6 +1103,7 @@ func (s *ResourceGenerator) makeTerminatingGatewayListener(
 					svc,
 					intentions,
 					cfg.Protocol,
+					cfg.Websocket,
 				)
 				if err != nil {
 					return nil, fmt.Errorf("failed to make filter chain for cluster %q: %v", subsetClusterName, err)
@@ -1138,13 +1140,7 @@ func (s *ResourceGenerator) makeTerminatingGatewayListener(
 	return l, nil
 }
 
-func (s *ResourceGenerator) makeFilterChainTerminatingGateway(
-	cfgSnap *proxycfg.ConfigSnapshot,
-	cluster string,
-	service structs.ServiceName,
-	intentions structs.Intentions,
-	protocol string,
-) (*envoy_listener_v3.FilterChain, error) {
+func (s *ResourceGenerator) makeFilterChainTerminatingGateway(cfgSnap *proxycfg.ConfigSnapshot, cluster string, service structs.ServiceName, intentions structs.Intentions, protocol string, websocket bool) (*envoy_listener_v3.FilterChain, error) {
 	tlsContext := &envoy_tls_v3.DownstreamTlsContext{
 		CommonTlsContext:         makeCommonTLSContextFromLeaf(cfgSnap, cfgSnap.TerminatingGateway.ServiceLeaves[service]),
 		RequireClientCertificate: &wrappers.BoolValue{Value: true},
@@ -1180,6 +1176,7 @@ func (s *ResourceGenerator) makeFilterChainTerminatingGateway(
 	// HTTP filter to do intention checks here instead.
 	opts := listenerFilterOpts{
 		protocol:   protocol,
+		websocket:  websocket,
 		filterName: fmt.Sprintf("%s.%s.%s", service.Name, service.NamespaceOrDefault(), cfgSnap.Datacenter),
 		routeName:  cluster, // Set cluster name for route config since each will have its own
 		cluster:    cluster,
@@ -1317,6 +1314,7 @@ type filterChainOpts struct {
 	clusterName string
 	filterName  string
 	protocol    string
+	websocket   bool
 	useRDS      bool
 	tlsContext  *envoy_tls_v3.DownstreamTlsContext
 }
@@ -1325,6 +1323,7 @@ func (s *ResourceGenerator) makeUpstreamFilterChain(opts filterChainOpts) (*envo
 	filter, err := makeListenerFilter(listenerFilterOpts{
 		useRDS:     opts.useRDS,
 		protocol:   opts.protocol,
+		websocket:  opts.websocket,
 		filterName: opts.filterName,
 		routeName:  opts.routeName,
 		cluster:    opts.clusterName,
@@ -1414,6 +1413,7 @@ func (s *ResourceGenerator) getAndModifyUpstreamConfigForListener(id string, u *
 type listenerFilterOpts struct {
 	useRDS           bool
 	protocol         string
+	websocket        bool
 	filterName       string
 	routeName        string
 	cluster          string
@@ -1471,6 +1471,18 @@ func makeStatPrefix(prefix, filterName string) string {
 }
 
 func makeHTTPFilter(opts listenerFilterOpts) (*envoy_listener_v3.Filter, error) {
+	var UpgradeConfigs []*envoy_http_v3.HttpConnectionManager_UpgradeConfig
+
+	if opts.protocol == "http" && opts.websocket {
+		UpgradeConfigs = []*envoy_http_v3.HttpConnectionManager_UpgradeConfig{
+			{
+				UpgradeType: "websocket",
+			},
+		}
+	} else {
+		UpgradeConfigs = []*envoy_http_v3.HttpConnectionManager_UpgradeConfig{}
+	}
+
 	cfg := &envoy_http_v3.HttpConnectionManager{
 		StatPrefix: makeStatPrefix(opts.statPrefix, opts.filterName),
 		CodecType:  envoy_http_v3.HttpConnectionManager_AUTO,
@@ -1485,6 +1497,7 @@ func makeHTTPFilter(opts listenerFilterOpts) (*envoy_listener_v3.Filter, error) 
 			// sampled.
 			RandomSampling: &envoy_type_v3.Percent{Value: 0.0},
 		},
+		UpgradeConfigs: UpgradeConfigs,
 	}
 
 	if opts.useRDS {

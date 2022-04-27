@@ -1763,7 +1763,7 @@ func (s *state) handleUpdateIngressGateway(u cache.UpdateEvent, snap *ConfigSnap
 
 			hosts = append(hosts, service.Hosts...)
 
-			id := IngressListenerKey{Protocol: service.Protocol, Port: service.Port}
+			id := IngressListenerKey{Protocol: service.Protocol, Websocket: service.Websocket, Port: service.Port}
 			upstreamsMap[id] = append(upstreamsMap[id], u)
 		}
 

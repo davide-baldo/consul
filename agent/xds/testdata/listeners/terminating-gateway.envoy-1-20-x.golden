@@ -169,7 +169,12 @@
                   }
                 }
               },
-              "requireClientCertificate": true
+              "requireClientCertificate": true,
+              "upgradeConfigs": [
+                {
+                  "upgradeType": "websocket"
+                }
+              ]
             }
           }
         },

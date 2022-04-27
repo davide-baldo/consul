@@ -43,6 +43,11 @@ type IngressListener struct {
 	// current supported values are: (tcp | http | http2 | grpc).
 	Protocol string
 
+	// Websocket enable or disable the possibility to upgrade a http
+	// connection to a websocket. Makes sense only for http protocol,
+	// disabled by default.
+	Websocket bool `json:",omitempty"`
+
 	// Services declares the set of services to which the listener forwards
 	// traffic.
 	//
@@ -448,6 +453,7 @@ type GatewayService struct {
 	GatewayKind  ServiceKind
 	Port         int      `json:",omitempty"`
 	Protocol     string   `json:",omitempty"`
+	Websocket    bool     `json:",omitempty"`
 	Hosts        []string `json:",omitempty"`
 	CAFile       string   `json:",omitempty"`
 	CertFile     string   `json:",omitempty"`
@@ -485,6 +491,7 @@ func (g *GatewayService) IsSame(o *GatewayService) bool {
 		g.GatewayKind == o.GatewayKind &&
 		g.Port == o.Port &&
 		g.Protocol == o.Protocol &&
+		g.Websocket == o.Websocket &&
 		stringslice.Equal(g.Hosts, o.Hosts) &&
 		g.CAFile == o.CAFile &&
 		g.CertFile == o.CertFile &&
@@ -500,6 +507,7 @@ func (g *GatewayService) Clone() *GatewayService {
 		GatewayKind: g.GatewayKind,
 		Port:        g.Port,
 		Protocol:    g.Protocol,
+		Websocket:   g.Websocket,
 		// See https://github.com/go101/go101/wiki/How-to-efficiently-clone-a-slice%3F
 		Hosts:        append(g.Hosts[:0:0], g.Hosts...),
 		CAFile:       g.CAFile,
