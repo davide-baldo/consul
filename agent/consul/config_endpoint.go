@@ -546,6 +546,7 @@ func (c *ConfigEntry) computeResolvedServiceConfig(
 	// blocking query, this function will be rerun and these state store lookups will both be current.
 	// We use the default enterprise meta to look up the global proxy defaults because they are not namespaced.
 	var proxyConfGlobalProtocol string
+	var proxyConfGlobalWebsocket bool
 	proxyConf := entries.GetProxyDefaults(args.PartitionOrDefault())
 	if proxyConf != nil {
 		// Apply the proxy defaults to the sidecar's proxy config
@@ -598,6 +599,7 @@ func (c *ConfigEntry) computeResolvedServiceConfig(
 		if serviceConf.Mode != structs.ProxyModeDefault {
 			thisReply.Mode = serviceConf.Mode
 		}
+		thisReply.ProxyConfig["websocket"] = serviceConf.Websocket
 	}
 
 	// First collect all upstreams into a set of seen upstreams.
@@ -680,6 +682,9 @@ func (c *ConfigEntry) computeResolvedServiceConfig(
 			if upstreamSvcDefaults.Protocol != "" {
 				protocol = upstreamSvcDefaults.Protocol
 			}
+			resolvedCfg["websocket"] = upstreamSvcDefaults.Websocket
+		} else {
+			resolvedCfg["websocket"] = proxyConfGlobalWebsocket
 		}
 
 		if protocol != "" {

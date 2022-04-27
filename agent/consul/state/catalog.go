@@ -3109,6 +3109,7 @@ func ingressConfigGatewayServices(
 				Hosts:       service.Hosts,
 				Port:        listener.Port,
 				Protocol:    listener.Protocol,
+				Websocket:   listener.Websocket,
 			}
 
 			gatewayServices = append(gatewayServices, mapping)

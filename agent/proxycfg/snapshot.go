@@ -394,8 +394,9 @@ func (c *configSnapshotIngressGateway) IsEmpty() bool {
 }
 
 type IngressListenerKey struct {
-	Protocol string
-	Port     int
+	Protocol  string
+	Websocket bool
+	Port      int
 }
 
 func (k *IngressListenerKey) RouteName() string {

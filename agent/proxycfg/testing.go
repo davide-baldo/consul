@@ -1794,7 +1794,7 @@ func testConfigSnapshotIngressGateway(
 				t, variation, leaf, additionalEntries...,
 			),
 			Upstreams: map[IngressListenerKey]structs.Upstreams{
-				{protocol, 9191}: {
+				{protocol, false, 9191}: {
 					{
 						// We rely on this one having default type in a few tests...
 						DestinationName:      "db",
@@ -1805,7 +1805,7 @@ func testConfigSnapshotIngressGateway(
 				},
 			},
 			Listeners: map[IngressListenerKey]structs.IngressListener{
-				{protocol, 9191}: {
+				{protocol, false, 9191}: {
 					Port:     9191,
 					Protocol: protocol,
 					Services: []structs.IngressService{

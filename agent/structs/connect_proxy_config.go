@@ -627,6 +627,10 @@ type ExposePath struct {
 	// Valid values are "http" and "http2", defaults to "http"
 	Protocol string `json:",omitempty"`
 
+	// Websocket enable or disable the possibility to upgrade a http
+	// connection to a websocket, disabled by default.
+	Websocket bool `json:",omitempty"`
+
 	// ParsedFromCheck is set if this path was parsed from a registered check
 	ParsedFromCheck bool `json:",omitempty" alias:"parsed_from_check"`
 }
@@ -679,6 +683,7 @@ func (p *ExposePath) ToAPI() api.ExposePath {
 		Path:            p.Path,
 		LocalPathPort:   p.LocalPathPort,
 		Protocol:        p.Protocol,
+		Websocket:       p.Websocket,
 		ParsedFromCheck: p.ParsedFromCheck,
 	}
 }
